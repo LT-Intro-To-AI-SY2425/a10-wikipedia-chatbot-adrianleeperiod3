@@ -1,3 +1,4 @@
+#Davin and Adrian
 import re, string, calendar
 from wikipedia import WikipediaPage
 import wikipedia
@@ -42,7 +43,7 @@ def clean_text(text: str) -> str:
     """Cleans given text removing non-ASCII characters and duplicate spaces & newlines
 
     Args:
-        text - text to clean
+        text - text to cleanI
 
     Returns:
         cleaned text
@@ -92,6 +93,21 @@ def get_polar_radius(planet_name: str) -> str:
 
     return match.group("radius")
 
+def get_capital_name(country_name: str) -> str:
+    """Gets the capital of country
+    Args:
+        country - country to get the capital of
+
+    Returns:
+        capital of given country
+    """
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(country_name)))
+    print(infobox_text)
+    pattern = r"(?:Total Area*?)(?: ?[\d]+ )?(?P<area>[\d,.]+)(?:.*?)km"
+    error_text = "Page infobox has no area information"
+    match = get_match(infobox_text, pattern, error_text)
+    return match.group("area")
+
 
 def get_birth_date(name: str) -> str:
     """Gets birth date of the given person
@@ -140,6 +156,16 @@ def polar_radius(matches: List[str]) -> List[str]:
     """
     return [get_polar_radius(matches[0])]
 
+def capital_name(matches: List[str]) -> List[str]:
+    """Returns name of capital in country matches
+    Args:
+        matches - match from pattern of country to find capital
+
+    Returns:
+        capital of country
+    """
+    return "hi"
+
 
 # dummy argument is ignored and doesn't matter
 def bye_action(dummy: List[str]) -> None:
@@ -156,7 +182,8 @@ Action = Callable[[List[str]], List[Any]]
 pa_list: List[Tuple[Pattern, Action]] = [
     ("when was % born".split(), birth_date),
     ("what is the polar radius of %".split(), polar_radius),
-    (["bye"], bye_action),
+    ("What is the capital of %".split(), capital_name),
+    (["bye"], bye_action)
 ]
 
 
