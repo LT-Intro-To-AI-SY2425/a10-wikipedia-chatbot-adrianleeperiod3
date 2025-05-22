@@ -38,6 +38,8 @@ def get_first_infobox_text(html: str) -> str:
         raise LookupError("Page has no infobox")
     return results[0].text
 
+def convert_to_float(number_str):
+    return float(number_str.replace(',', ''))
 
 def clean_text(text: str) -> str:
     """Cleans given text removing non-ASCII characters and duplicate spaces & newlines
@@ -77,55 +79,33 @@ def get_match(
     return match
 
 
-def get_polar_radius(planet_name: str) -> str:
-    """Gets the radius of the given planet
-
-    Args:
-        planet_name - name of the planet to get radius of
-
-    Returns:
-        radius of the given planet
-    """
-    infobox_text = clean_text(get_first_infobox_text(get_page_html(planet_name)))
-    pattern = r"(?:Polar radius.*?)(?: ?[\d]+ )?(?P<radius>[\d,.]+)(?:.*?)km"
-    error_text = "Page infobox has no polar radius information"
-    match = get_match(infobox_text, pattern, error_text)
-
-    return match.group("radius")
-
-def get_capital_name(country_name: str) -> str:
-    """Gets the capital of country
-    Args:
-        country - country to get the capital of
-
-    Returns:
-        capital of given country
-    """
+def get_percentage(country_name: str) -> str:
     infobox_text = clean_text(get_first_infobox_text(get_page_html(country_name)))
-    print(infobox_text)
-    pattern = r"(?:Total Area*?)(?: ?[\d]+ )?(?P<area>[\d,.]+)(?:.*?)km"
+    pattern = r"Water\s*\(%\)\s*(?P<perc>[0-9]+(?:\.[0-9]+)?)"
+    error_text = "Page infobox has no water information"
+    match = get_match(infobox_text, pattern, error_text)
+    return(match.group("perc"))
+
+def get_area(country_name: str) -> str:
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(country_name)))
+    pattern = r"(?:Area Total)(?: ?[\d]+ )?(?P<area>[\d,.]+)"
     error_text = "Page infobox has no area information"
     match = get_match(infobox_text, pattern, error_text)
-    return match.group("area")
+    return(match.group("area"))
 
 
-def get_birth_date(name: str) -> str:
-    """Gets birth date of the given person
+def get_water_amount(country_name: str) -> str:
+    
+    infobox_text = clean_text(get_first_infobox_text(get_page_html(country_name)))
+    pattern_a = r"(?:Area Total)(?: ?[\d]+ )?(?P<area>[\d,.]+)"
+    error_text_a = "Page infobox has no area information"
+    match_a = get_match(infobox_text, pattern_a, error_text_a)
 
-    Args:
-        name - name of the person
+    pattern_p = r"Water\s*\(%\)\s*(?P<perc>[0-9]+(?:\.[0-9]+)?)"
+    error_text_p = "Page infobox has no water information"
+    match_p = get_match(infobox_text, pattern_p, error_text_p)
 
-    Returns:
-        birth date of the given person
-    """
-    infobox_text = clean_text(get_first_infobox_text(get_page_html(name)))
-    pattern = r"(?:Born\D*)(?P<birth>\d{4}-\d{2}-\d{2})"
-    error_text = (
-        "Page infobox has no birth information (at least none in xxxx-xx-xx format)"
-    )
-    match = get_match(infobox_text, pattern, error_text)
-
-    return match.group("birth")
+    return (round(convert_to_float(match_a.group("area"))*(convert_to_float(match_p.group("perc"))/100)))
 
 
 # below are a set of actions. Each takes a list argument and returns a list of answers
@@ -133,38 +113,16 @@ def get_birth_date(name: str) -> str:
 # list of the answer(s) and not just the answer itself.
 
 
-def birth_date(matches: List[str]) -> List[str]:
-    """Returns birth date of named person in matches
+def water_amount(matches: List[str]) -> List[str]:
 
-    Args:
-        matches - match from pattern of person's name to find birth date of
-
-    Returns:
-        birth date of named person
-    """
-    return [get_birth_date(" ".join(matches))]
+    return [get_water_amount(matches[0])]
 
 
-def polar_radius(matches: List[str]) -> List[str]:
-    """Returns polar radius of planet in matches
+def water_percentage(matches: List[str]) -> List[str]:
+    return [get_percentage(matches[0])]
 
-    Args:
-        matches - match from pattern of planet to find polar radius of
-
-    Returns:
-        polar radius of planet
-    """
-    return [get_polar_radius(matches[0])]
-
-def capital_name(matches: List[str]) -> List[str]:
-    """Returns name of capital in country matches
-    Args:
-        matches - match from pattern of country to find capital
-
-    Returns:
-        capital of country
-    """
-    return "hi"
+def country_area(matches: List[str]) -> List[str]:
+    return [get_area(matches[0])]
 
 
 # dummy argument is ignored and doesn't matter
@@ -180,9 +138,9 @@ Action = Callable[[List[str]], List[Any]]
 # The pattern-action list for the natural language query system. It must be declared
 # here, after all of the function definitions
 pa_list: List[Tuple[Pattern, Action]] = [
-    ("when was % born".split(), birth_date),
-    ("what is the polar radius of %".split(), polar_radius),
-    ("What is the capital of %".split(), capital_name),
+    ("how much of % is water".split(), water_amount),
+    ("what percentage of % is water".split(), water_percentage),
+    ("what is the area of %".split(), country_area),
     (["bye"], bye_action)
 ]
 
